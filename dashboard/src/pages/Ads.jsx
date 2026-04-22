@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
+import { debug } from '../debug.js';
 
 export default function Ads() {
   const [ads, setAds] = useState([]);
   const [form, setForm] = useState({ name: '', kind: 'native', target_url: '' });
   const [error, setError] = useState('');
 
-  const load = () => api.get('/api/v1/admin/ads').then(d => setAds(d.ads || [])).catch(e => setError(e.message));
-  useEffect(() => { load(); }, []);
+  const load = () => api.get('/api/v1/admin/ads').then(d => { debug.page('Ads', d); setAds(d.ads || []); }).catch(e => { debug.error('Ads load', e); setError(e.message); });
+  useEffect(() => { debug.page('Ads mount'); load(); }, []);
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
 

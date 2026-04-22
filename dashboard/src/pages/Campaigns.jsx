@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
+import { debug } from '../debug.js';
 
 export default function Campaigns() {
   const [campaigns, setCampaigns] = useState([]);
@@ -12,8 +13,12 @@ export default function Campaigns() {
   const [newCampaign, setNewCampaign] = useState({ name: '', mode: 'priority' });
   const [error, setError] = useState('');
 
-  const load = () => api.get('/api/v1/admin/ads/campaigns').then(d => setCampaigns(d.campaigns || []));
-  useEffect(() => { load(); api.get('/api/v1/admin/ads').then(d => setAllAds(d.ads || [])); }, []);
+  const load = () => api.get('/api/v1/admin/ads/campaigns').then(d => { debug.page('Campaigns', d); setCampaigns(d.campaigns || []); });
+  useEffect(() => {
+    debug.page('Campaigns mount');
+    load();
+    api.get('/api/v1/admin/ads').then(d => { debug.page('Campaigns allAds', d); setAllAds(d.ads || []); });
+  }, []);
 
   const selectCampaign = async (c) => {
     setSelected(c);

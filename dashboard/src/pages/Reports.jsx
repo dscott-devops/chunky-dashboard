@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
+import { debug } from '../debug.js';
 
 export default function Reports() {
   const [report, setReport] = useState([]);
@@ -7,9 +8,9 @@ export default function Reports() {
   const [error, setError] = useState('');
 
   const load = (d) =>
-    api.get(`/api/v1/admin/lumps/daily-report?date=${d}`).then(r => setReport(r.rows || [])).catch(e => setError(e.message));
+    api.get(`/api/v1/admin/lumps/daily-report?date=${d}`).then(r => { debug.page('Reports', r); setReport(r.rows || []); }).catch(e => { debug.error('Reports load', e); setError(e.message); });
 
-  useEffect(() => { load(date); }, [date]);
+  useEffect(() => { debug.page('Reports mount', { date }); load(date); }, [date]);
 
   return (
     <div className="page">

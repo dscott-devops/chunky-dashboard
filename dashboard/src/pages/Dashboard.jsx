@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
+import { debug } from '../debug.js';
 
 export default function Dashboard() {
   const [health, setHealth] = useState(null);
@@ -7,8 +8,13 @@ export default function Dashboard() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    api.get('/api/v1/health').then(setHealth).catch(() => setHealth({ status: 'error' }));
-    api.get('/api/v1/admin/lumps/problems').then(d => setProblems(d.sources || [])).catch(e => setError(e.message));
+    debug.page('Dashboard');
+    api.get('/api/v1/health')
+      .then(d => { debug.page('Dashboard', { health: d }); setHealth(d); })
+      .catch(err => { debug.error('Dashboard health', err); setHealth({ status: 'error' }); });
+    api.get('/api/v1/admin/lumps/problems')
+      .then(d => { debug.page('Dashboard problems', d); setProblems(d.sources || []); })
+      .catch(e => { debug.error('Dashboard problems', e); setError(e.message); });
   }, []);
 
   return (

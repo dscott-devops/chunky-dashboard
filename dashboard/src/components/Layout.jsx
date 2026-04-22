@@ -1,5 +1,6 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../AuthContext.jsx';
+import { debug } from '../debug.js';
 
 const navItems = [
   { to: '/dashboard',     label: 'Dashboard' },
@@ -12,6 +13,8 @@ const navItems = [
 export default function Layout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  debug.nav('Layout render', location.pathname);
 
   const handleLogout = async () => {
     await logout();

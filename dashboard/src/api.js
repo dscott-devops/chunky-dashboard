@@ -1,5 +1,4 @@
-// Thin fetch wrapper — all requests go through the Express auth proxy.
-// The proxy injects the Bearer token and routes to prod/dev based on the JWT.
+import { debug } from './debug.js';
 
 async function request(method, path, body) {
   const opts = {
@@ -8,15 +7,30 @@ async function request(method, path, body) {
     credentials: 'include',
   };
   if (body !== undefined) opts.body = JSON.stringify(body);
-  const res = await fetch(path, opts);
-  const data = await res.json();
-  if (!data.ok) {
-    const err = new Error(data.message || data.code || 'Request failed');
-    err.code = data.code;
-    err.status = res.status;
+
+  const start = Date.now();
+  let response;
+
+  try {
+    const res = await fetch(path, opts);
+    response = await res.json();
+    debug.api(method, path, body, response, Date.now() - start);
+
+    if (!response.ok) {
+      const err = new Error(response.message || response.code || 'Request failed');
+      err.code = response.code;
+      err.status = res.status;
+      throw err;
+    }
+    return response;
+  } catch (err) {
+    if (!response) {
+      // Network-level failure (no response parsed yet)
+      debug.api(method, path, body, { networkError: err.message }, Date.now() - start);
+    }
+    debug.error(`API ${method} ${path}`, err);
     throw err;
   }
-  return data;
 }
 
 export const api = {

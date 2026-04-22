@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
+import { debug } from '../debug.js';
 
 export default function Users() {
   const [users, setUsers] = useState([]);
@@ -8,9 +9,9 @@ export default function Users() {
   const [msg, setMsg] = useState('');
 
   const load = (q = '') =>
-    api.get(`/api/v1/admin/users?q=${encodeURIComponent(q)}`).then(d => setUsers(d.users || [])).catch(e => setError(e.message));
+    api.get(`/api/v1/admin/users?q=${encodeURIComponent(q)}`).then(d => { debug.page('Users', d); setUsers(d.users || []); }).catch(e => { debug.error('Users load', e); setError(e.message); });
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { debug.page('Users mount'); load(); }, []);
 
   const resetPassword = async (id) => {
     try {
