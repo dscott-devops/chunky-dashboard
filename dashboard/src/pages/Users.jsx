@@ -36,13 +36,14 @@ export default function Users() {
 
       <table className="data-table">
         <thead>
-          <tr><th>Email</th><th>Role</th><th>Created</th><th></th></tr>
+          <tr><th>Name</th><th>Email</th><th>Admin</th><th>Created</th><th></th></tr>
         </thead>
         <tbody>
           {users.map(u => (
             <tr key={u.id}>
+              <td>{[u.firstname, u.lastname].filter(Boolean).join(' ') || '—'}</td>
               <td>{u.email}</td>
-              <td><span className="badge">{u.role}</span></td>
+              <td>{u.admin ? <span className="badge green">admin</span> : <span className="badge">user</span>}</td>
               <td>{u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}</td>
               <td>
                 <button className="btn-sm" onClick={() => resetPassword(u.id)}>Reset PW</button>
