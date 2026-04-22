@@ -1,0 +1,7 @@
+node_modules/
+public/
+proxy/.env
+proxy/data/
+dashboard/dist/
+*.log
+.DS_Store
