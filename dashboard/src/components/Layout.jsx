@@ -37,12 +37,17 @@ export default function Layout() {
         <div className="sidebar-footer">
           <span className="env-badge">{user?.env === 'dev' ? 'DEV' : 'PROD'}</span>
           <span className="user-email">{user?.email}</span>
-          <button className="logout-btn" onClick={handleLogout}>Logout</button>
         </div>
       </nav>
-      <main className="content">
-        <Outlet />
-      </main>
+      <div className="main-wrapper">
+        <header className="topbar">
+          <span className="topbar-email">{user?.email}</span>
+          <button className="logout-btn" onClick={handleLogout}>Logout</button>
+        </header>
+        <main className="content">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }
