@@ -218,6 +218,20 @@ app.get('/auth/me', requireAuth, (req, res) => {
   res.json({ ok: true, userId, email, env });
 });
 
+// --- Health check proxy (public API endpoint, no /api/v1 prefix) ---
+app.get('/status', async (req, res) => {
+  const apiBase = PROD_API_URL;
+  try {
+    const r = await fetch(`${apiBase}/health`);
+    const body = await r.json();
+    log.debug(`Health check → ${apiBase}/health status=${r.status}`);
+    res.status(r.status).json(body);
+  } catch (err) {
+    log.error(`Health check failed: ${err.message}`);
+    res.status(502).json({ ok: false, status: 'error', message: err.message });
+  }
+});
+
 // --- API proxy ---
 app.use('/api', requireAuth, async (req, res) => {
   const apiBase = req.admin.env === 'dev' ? DEV_API_URL : PROD_API_URL;

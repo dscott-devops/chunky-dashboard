@@ -9,7 +9,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     debug.page('Dashboard');
-    api.get('/api/v1/health')
+    fetch('/status', { credentials: 'include' }).then(r => r.json())
       .then(d => { debug.page('Dashboard', { health: d }); setHealth(d); })
       .catch(err => { debug.error('Dashboard health', err); setHealth({ status: 'error' }); });
     api.get('/api/v1/admin/lumps/problems')

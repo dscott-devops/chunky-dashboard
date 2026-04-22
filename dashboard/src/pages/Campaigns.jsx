@@ -13,11 +13,11 @@ export default function Campaigns() {
   const [newCampaign, setNewCampaign] = useState({ name: '', mode: 'priority' });
   const [error, setError] = useState('');
 
-  const load = () => api.get('/api/v1/admin/ads/campaigns').then(d => { debug.page('Campaigns', d); setCampaigns(d.campaigns || []); });
+  const load = () => api.get('/api/v1/ads/campaigns').then(d => { debug.page('Campaigns', d); setCampaigns(d.campaigns || []); });
   useEffect(() => {
     debug.page('Campaigns mount');
     load();
-    api.get('/api/v1/admin/ads').then(d => { debug.page('Campaigns allAds', d); setAllAds(d.ads || []); });
+    api.get('/api/v1/ads').then(d => { debug.page('Campaigns allAds', d); setAllAds(d.ads || []); });
   }, []);
 
   const selectCampaign = async (c) => {
@@ -33,7 +33,7 @@ export default function Campaigns() {
   const createCampaign = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/api/v1/admin/ads/campaigns', newCampaign);
+      await api.post('/api/v1/ads/campaigns', newCampaign);
       setNewCampaign({ name: '', mode: 'priority' });
       load();
     } catch (err) { setError(err.message); }
@@ -41,7 +41,7 @@ export default function Campaigns() {
 
   const deleteCampaign = async (id) => {
     if (!confirm('Delete this campaign?')) return;
-    await api.delete(`/api/v1/admin/ads/campaigns/${id}`);
+    await api.delete(`/api/v1/ads/campaigns/${id}`);
     if (selected?.id === id) setSelected(null);
     load();
   };

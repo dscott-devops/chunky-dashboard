@@ -7,20 +7,20 @@ export default function Ads() {
   const [form, setForm] = useState({ name: '', kind: 'native', target_url: '' });
   const [error, setError] = useState('');
 
-  const load = () => api.get('/api/v1/admin/ads').then(d => { debug.page('Ads', d); setAds(d.ads || []); }).catch(e => { debug.error('Ads load', e); setError(e.message); });
+  const load = () => api.get('/api/v1/ads').then(d => { debug.page('Ads', d); setAds(d.ads || []); }).catch(e => { debug.error('Ads load', e); setError(e.message); });
   useEffect(() => { debug.page('Ads mount'); load(); }, []);
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
 
   const create = async (e) => {
     e.preventDefault();
-    try { await api.post('/api/v1/admin/ads', form); setForm({ name: '', kind: 'native', target_url: '' }); load(); }
+    try { await api.post('/api/v1/ads', form); setForm({ name: '', kind: 'native', target_url: '' }); load(); }
     catch (err) { setError(err.message); }
   };
 
   const remove = async (id) => {
     if (!confirm('Delete this ad?')) return;
-    await api.delete(`/api/v1/admin/ads/${id}`);
+    await api.delete(`/api/v1/ads/${id}`);
     load();
   };
 
