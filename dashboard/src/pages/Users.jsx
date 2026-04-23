@@ -119,7 +119,11 @@ export default function Users() {
         <ul className="item-list">
           {users.map(u => (
             <li key={u.id} className={selectedId === u.id ? 'selected' : ''} onClick={() => selectUser(u.id)}>
-              <span>{[u.firstname, u.lastname].filter(Boolean).join(' ') || u.email}</span>
+              <span style={{ display:'flex', flexDirection:'column', gap:'1px' }}>
+                <span>{[u.firstname, u.lastname].filter(Boolean).join(' ') || '—'}</span>
+                <span style={{ fontSize:'11px', color:'var(--text-muted)' }}>{u.username ? `@${u.username}` : ''}</span>
+                <span style={{ fontSize:'11px', color:'var(--text-muted)' }}>{u.email}</span>
+              </span>
               {u.admin && <span className="badge green">admin</span>}
             </li>
           ))}
