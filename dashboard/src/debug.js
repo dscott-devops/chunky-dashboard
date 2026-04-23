@@ -1,9 +1,13 @@
-// Toggle in browser console:
-//   localStorage.setItem('DEBUG', 'true')  — enable
-//   localStorage.removeItem('DEBUG')        — disable
-// Then refresh the page.
+// Debug is controlled by VITE_DEBUG build-time env var (set in .env.local on the server)
+// or by localStorage at runtime as a fallback.
+//
+// To enable on the server:  echo 'VITE_DEBUG=true' >> .env.local  &&  npm run build
+// To enable in the browser: localStorage.setItem('DEBUG', 'true')  then refresh
+// To disable in browser:    localStorage.removeItem('DEBUG')        then refresh
 
-const isDebug = () => localStorage.getItem('DEBUG') === 'true';
+const BUILD_DEBUG = import.meta.env.VITE_DEBUG === 'true';
+
+const isDebug = () => BUILD_DEBUG || localStorage.getItem('DEBUG') === 'true';
 
 const STYLES = {
   API:    'color:#6c8fef;font-weight:600',
@@ -71,7 +75,8 @@ export const debug = {
   init() {
     if (isDebug()) {
       console.log('%c🔍 Chunky Admin — DEBUG MODE ON', 'color:#6c8fef;font-size:14px;font-weight:700');
-      console.log('%c  To disable: localStorage.removeItem("DEBUG") then refresh', 'color:#94a3b8');
+      console.log(`%c  Build-time: VITE_DEBUG=${BUILD_DEBUG}  |  Runtime localStorage: ${localStorage.getItem('DEBUG')}`, 'color:#94a3b8');
+      console.log('%c  To disable: set VITE_DEBUG=false in .env.local and rebuild, or localStorage.removeItem("DEBUG")', 'color:#94a3b8');
     }
   },
 };
