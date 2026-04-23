@@ -34,8 +34,6 @@ export default function Users() {
         />
       </div>
 
-      <p className="muted" style={{marginBottom:'8px'}}>Loaded {users.length} user(s)</p>
-
       <table className="data-table">
         <thead>
           <tr><th>Name</th><th>Email</th><th>Admin</th><th>Created</th><th></th></tr>

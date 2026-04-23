@@ -245,7 +245,6 @@ app.use('/api', requireAuth, async (req, res) => {
     if (upstream_res.status >= 400) {
       log.warn(`[${req.reqId}] Upstream error ${upstream_res.status}: ${body.slice(0, 200)}`);
     }
-    log.debug(`[${req.reqId}] Response body: ${body.slice(0, 500)}`);
 
     res.status(upstream_res.status);
     upstream_res.headers.forEach((val, key) => {
