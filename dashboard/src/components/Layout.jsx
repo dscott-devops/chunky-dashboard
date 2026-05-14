@@ -8,6 +8,7 @@ const navItems = [
   { to: '/ads',           label: 'Ads' },
   { to: '/users',         label: 'Users' },
   { to: '/reports',       label: 'Reports' },
+  { to: '/push',          label: 'Push' },
 ];
 
 export default function Layout() {

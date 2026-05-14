@@ -7,6 +7,7 @@ import Campaigns from './pages/Campaigns.jsx';
 import Ads from './pages/Ads.jsx';
 import Users from './pages/Users.jsx';
 import Reports from './pages/Reports.jsx';
+import Push from './pages/Push.jsx';
 
 function RequireAuth({ children }) {
   const { user } = useAuth();
@@ -28,6 +29,7 @@ export default function App() {
         <Route path="ads" element={<Ads />} />
         <Route path="users" element={<Users />} />
         <Route path="reports" element={<Reports />} />
+        <Route path="push" element={<Push />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

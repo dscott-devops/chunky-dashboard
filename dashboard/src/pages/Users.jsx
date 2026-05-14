@@ -14,7 +14,10 @@ function Field({ label, value, onChange }) {
 }
 
 export default function Users() {
+  const [tab, setTab]               = useState('all'); // 'all' | 'banned'
   const [users, setUsers]           = useState([]);
+  const [banned, setBanned]         = useState([]);
+  const [bannedMap, setBannedMap]   = useState({});   // userId → ban record
   const [search, setSearch]         = useState('');
   const [selectedId, setSelectedId] = useState(null);
   const [detail, setDetail]         = useState(null);
@@ -25,8 +28,21 @@ export default function Users() {
   const [showPwForm, setShowPwForm] = useState(false);
   const [newPw, setNewPw]           = useState('');
   const [savingPw, setSavingPw]     = useState(false);
+  const [banReason, setBanReason]   = useState('');
+  const [banning, setBanning]       = useState(false);
   const [error, setError]           = useState('');
   const [msg, setMsg]               = useState('');
+
+  const loadBanned = useCallback(() =>
+    api.get('/api/v1/admin/users/banned')
+      .then(d => {
+        debug.page('Banned users', d);
+        const list = d.banned || [];
+        setBanned(list);
+        setBannedMap(Object.fromEntries(list.map(b => [b.user_id, b])));
+      })
+      .catch(e => debug.error('Banned load', e)),
+  []);
 
   const load = useCallback((q = '') =>
     api.get(`/api/v1/admin/users?q=${encodeURIComponent(q)}`)
@@ -34,7 +50,7 @@ export default function Users() {
       .catch(e => { debug.error('Users load', e); setError(e.message); }),
   []);
 
-  useEffect(() => { debug.page('Users mount'); load(); }, [load]);
+  useEffect(() => { load(); loadBanned(); }, [load, loadBanned]);
 
   const selectUser = async (id) => {
     setSelectedId(id);
@@ -44,6 +60,7 @@ export default function Users() {
     setMsg('');
     setShowPwForm(false);
     setNewPw('');
+    setBanReason('');
     setDetailLoading(true);
     try {
       const d = await api.get(`/api/v1/admin/users/${id}?type=full`);
@@ -103,28 +120,87 @@ export default function Users() {
     } finally { setSavingPw(false); }
   };
 
+  const banUser = async () => {
+    if (!window.confirm(`Ban ${detail.email}?`)) return;
+    setBanning(true); setError(''); setMsg('');
+    try {
+      await api.post(`/api/v1/admin/users/${selectedId}/ban`, { reason: banReason || undefined });
+      setMsg(`${detail.email} has been banned.`);
+      setBanReason('');
+      await loadBanned();
+    } catch (e) {
+      debug.error('Ban user', e); setError(e.message);
+    } finally { setBanning(false); }
+  };
+
+  const unbanUser = async () => {
+    if (!window.confirm(`Remove ban for ${detail.email}?`)) return;
+    setBanning(true); setError(''); setMsg('');
+    try {
+      await api.delete(`/api/v1/admin/users/${selectedId}/ban`);
+      setMsg(`Ban removed for ${detail.email}.`);
+      await loadBanned();
+    } catch (e) {
+      debug.error('Unban user', e); setError(e.message);
+    } finally { setBanning(false); }
+  };
+
+  const isBanned   = !!(selectedId && bannedMap[selectedId]);
+  const banRecord  = isBanned ? bannedMap[selectedId] : null;
+
   return (
     <div className="two-col" style={{ alignItems:'flex-start' }}>
 
-      {/* ── Left: user list ── */}
+      {/* ── Left: list ── */}
       <div className="col-left">
-        <h2 style={{ color:'var(--heading)', fontSize:'20px', marginBottom:'16px' }}>Users</h2>
-        <div className="search-bar">
-          <input
-            placeholder="Search users…"
-            value={search}
-            onChange={e => { setSearch(e.target.value); load(e.target.value); }}
-          />
+        <h2 style={{ color:'var(--heading)', fontSize:'20px', marginBottom:'12px' }}>Users</h2>
+
+        <div style={{ display:'flex', gap:'4px', marginBottom:'12px' }}>
+          {[['all', `All (${users.length})`], ['banned', `Banned (${banned.length})`]].map(([t, label]) => (
+            <button key={t} onClick={() => { setTab(t); setSelectedId(null); setDetail(null); }}
+              style={{ flex:1, fontSize:'12px', padding:'5px 0',
+                background: tab === t ? 'var(--accent)' : 'var(--border)',
+                color: tab === t ? '#fff' : 'var(--text)' }}>
+              {label}
+            </button>
+          ))}
         </div>
+
+        {tab === 'all' && (
+          <div className="search-bar">
+            <input placeholder="Search users…" value={search}
+              onChange={e => { setSearch(e.target.value); load(e.target.value); }} />
+          </div>
+        )}
+
         <ul className="item-list">
-          {users.map(u => (
+          {tab === 'all' && users.map(u => (
             <li key={u.id} className={selectedId === u.id ? 'selected' : ''} onClick={() => selectUser(u.id)}>
               <span style={{ display:'flex', flexDirection:'column', gap:'1px' }}>
                 <span>{[u.firstname, u.lastname].filter(Boolean).join(' ') || '—'}</span>
-                <span style={{ fontSize:'11px', color:'var(--text-muted)' }}>{u.username ? `@${u.username}` : ''}</span>
+                {u.username && <span style={{ fontSize:'11px', color:'var(--text-muted)' }}>@{u.username}</span>}
                 <span style={{ fontSize:'11px', color:'var(--text-muted)' }}>{u.email}</span>
               </span>
-              {u.admin && <span className="badge green">admin</span>}
+              <span style={{ display:'flex', flexDirection:'column', gap:'3px', alignItems:'flex-end' }}>
+                {u.admin && <span className="badge green">admin</span>}
+                {bannedMap[u.id] && <span className="badge" style={{ background:'rgba(248,113,113,0.15)', color:'var(--red)' }}>banned</span>}
+              </span>
+            </li>
+          ))}
+
+          {tab === 'banned' && banned.length === 0 && (
+            <li style={{ cursor:'default' }}><span className="muted">No banned users.</span></li>
+          )}
+          {tab === 'banned' && banned.map(b => (
+            <li key={b.user_id} className={selectedId === b.user_id ? 'selected' : ''} onClick={() => selectUser(b.user_id)}>
+              <span style={{ display:'flex', flexDirection:'column', gap:'1px' }}>
+                <span>{b.displayname || b.username || b.email}</span>
+                <span style={{ fontSize:'11px', color:'var(--text-muted)' }}>{b.email}</span>
+                {b.reason && <span style={{ fontSize:'11px', color:'var(--red)' }}>{b.reason}</span>}
+              </span>
+              <span className="badge" style={{ background:'rgba(248,113,113,0.15)', color:'var(--red)', whiteSpace:'nowrap' }}>
+                {b.banned_by_name ? `by ${b.banned_by_name}` : 'banned'}
+              </span>
             </li>
           ))}
         </ul>
@@ -137,7 +213,10 @@ export default function Users() {
 
         {selectedId && !detailLoading && detail && (
           <>
-            <h3>{[detail.firstname, detail.lastname].filter(Boolean).join(' ') || detail.email}</h3>
+            <h3 style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+              {[detail.firstname, detail.lastname].filter(Boolean).join(' ') || detail.email}
+              {isBanned && <span className="badge" style={{ background:'rgba(248,113,113,0.15)', color:'var(--red)' }}>banned</span>}
+            </h3>
             <p className="muted" style={{ marginBottom:'16px', fontSize:'12px' }}>
               ID {detail.id} · joined {detail.created_at ? new Date(detail.created_at).toLocaleDateString() : '—'}
             </p>
@@ -145,7 +224,6 @@ export default function Users() {
             {error && <p className="error">{error}</p>}
             {msg   && <p className="success">{msg}</p>}
 
-            {/* Profile fields */}
             <h4>Profile</h4>
             <Field label="First name"    value={form.firstname}   onChange={set('firstname')} />
             <Field label="Last name"     value={form.lastname}    onChange={set('lastname')} />
@@ -156,7 +234,6 @@ export default function Users() {
             <Field label="Bio"           value={form.bio}         onChange={set('bio')} />
             <Field label="Mobile"        value={form.mobile}      onChange={set('mobile')} />
 
-            {/* Account flags */}
             <h4>Account</h4>
             <div style={{ display:'flex', gap:'20px', marginBottom:'16px' }}>
               <label style={{ display:'flex', gap:'6px', alignItems:'center', fontSize:'13px', cursor:'pointer' }}>
@@ -168,12 +245,10 @@ export default function Users() {
                 Active
               </label>
             </div>
-
             <button onClick={saveChanges} disabled={saving} style={{ marginBottom:'24px' }}>
               {saving ? 'Saving…' : 'Save Changes'}
             </button>
 
-            {/* Teams */}
             <h4>Teams</h4>
             <p className="muted" style={{ marginBottom:'6px' }}>
               Following {detail.team_count ?? '?'} team{detail.team_count !== 1 ? 's' : ''} · Favorite: <strong style={{ color:'var(--text)' }}>{detail.favorite_name || '—'}</strong>
@@ -182,7 +257,28 @@ export default function Users() {
               {resettingTeams ? 'Resetting…' : 'Reset Teams'}
             </button>
 
-            {/* Password */}
+            <h4>Ban</h4>
+            {isBanned ? (
+              <div className="card" style={{ marginBottom:'24px', borderColor:'rgba(248,113,113,0.3)' }}>
+                <p style={{ fontSize:'13px', marginBottom:'4px' }}>
+                  <span style={{ color:'var(--red)', fontWeight:600 }}>Banned</span>
+                  {banRecord.banned_by_name && <span className="muted"> by {banRecord.banned_by_name}</span>}
+                  {banRecord.created_at && <span className="muted"> · {new Date(banRecord.created_at).toLocaleDateString()}</span>}
+                </p>
+                {banRecord.reason && <p style={{ fontSize:'13px', color:'var(--text-muted)', marginBottom:'10px' }}>{banRecord.reason}</p>}
+                <button className="btn-sm" onClick={unbanUser} disabled={banning}>
+                  {banning ? 'Removing…' : 'Remove Ban'}
+                </button>
+              </div>
+            ) : (
+              <div style={{ marginBottom:'24px' }}>
+                <Field label="Reason (optional)" value={banReason} onChange={setBanReason} />
+                <button className="btn-danger" onClick={banUser} disabled={banning}>
+                  {banning ? 'Banning…' : 'Ban User'}
+                </button>
+              </div>
+            )}
+
             <h4>Password</h4>
             {!showPwForm && (
               <button className="btn-sm" onClick={() => { setShowPwForm(true); setError(''); setMsg(''); }}>
@@ -191,17 +287,10 @@ export default function Users() {
             )}
             {showPwForm && (
               <div className="inline-form" style={{ marginBottom:0 }}>
-                <input
-                  type="password"
-                  placeholder="New password (min 8 chars)"
-                  value={newPw}
-                  onChange={e => setNewPw(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && submitPw()}
-                  autoFocus
-                />
-                <button onClick={submitPw} disabled={savingPw}>
-                  {savingPw ? 'Saving…' : 'Set Password'}
-                </button>
+                <input type="password" placeholder="New password (min 8 chars)"
+                  value={newPw} onChange={e => setNewPw(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && submitPw()} autoFocus />
+                <button onClick={submitPw} disabled={savingPw}>{savingPw ? 'Saving…' : 'Set Password'}</button>
                 <button className="btn-sm" onClick={() => { setShowPwForm(false); setNewPw(''); }}>Cancel</button>
               </div>
             )}
